@@ -1,63 +1,785 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Inventory Barcode Camera</title> <script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script> <style> * { box-sizing: border-box; } html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: #fff; font-family: Arial, sans-serif; overflow: hidden; } .app { width: 100%; height: 100%; display: flex; flex-direction: column; } .top { padding: 12px 14px; background: #111; text-align: center; flex: 0 0 auto; } .top strong { font-size: 17px; } .top div { margin-top: 4px; font-size: 13px; opacity: .75; } .video-wrap { position: relative; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; background: #000; } video { width: 100%; height: 100%; object-fit: cover; background: #000; } .guide { position: absolute; width: 76%; max-width: 420px; height: 110px; border: 3px solid #fff; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .25); pointer-events: none; } .status { position: absolute; left: 12px; right: 12px; bottom: 14px; padding: 10px 12px; border-radius: 10px; background: rgba(0, 0, 0, .68); text-align: center; font-size: 14px; } .bottom { padding: 12px; background: #111; flex: 0 0 auto; } button { width: 100%; padding: 13px 16px; border: 0; border-radius: 10px; font-size: 16px; font-weight: 700; background: #fff; color: #111; } button:disabled { opacity: .45; } .error { display: none; margin: 10px 12px 0; padding: 10px; border-radius: 8px; background: #3a1111; color: #ffb4b4; font-size: 13px; line-height: 1.5; } .error.show { display: block; } </style> </head> <body> <div class="app">
-<!-- HEADER -->
 
-<div class="top">
+<!DOCTYPE html>
+<html lang="en">
 
-  <strong>
-    Inventory Barcode Scanner
-  </strong>
+<head>
+  <meta charset="UTF-8">
 
-  <div id="modeText">
-    Starting camera…
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  >
+
+  <title>Inventory Barcode Camera</title>
+
+  <script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top {
+      padding: 12px 14px;
+      background: #111;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+
+    .top strong {
+      font-size: 17px;
+    }
+
+    .top div {
+      margin-top: 4px;
+      font-size: 13px;
+      opacity: .75;
+    }
+
+    .video-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .guide {
+      position: absolute;
+      width: 76%;
+      max-width: 420px;
+      height: 110px;
+      border: 3px solid #fff;
+      border-radius: 14px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, .25);
+      pointer-events: none;
+    }
+
+    .status {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, .68);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .bottom {
+      padding: 12px;
+      background: #111;
+      flex: 0 0 auto;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      background: #fff;
+      color: #111;
+    }
+
+    button:disabled {
+      opacity: .45;
+    }
+
+    .error {
+      display: none;
+      margin: 10px 12px 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #3a1111;
+      color: #ffb4b4;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- HEADER -->
+
+    <div class="top">
+
+      <strong>
+        Inventory Barcode Scanner
+      </strong>
+
+      <div id="modeText">
+        Starting camera…
+      </div>
+
+    </div>
+
+
+    <!-- CAMERA -->
+
+    <div class="video-wrap">
+
+      <video
+        id="camera"
+        playsinline
+        muted
+        autoplay>
+      </video>
+
+      <div class="guide"></div>
+
+      <div
+        class="status"
+        id="status">
+        Requesting camera permission…
+      </div>
+
+    </div>
+
+
+    <!-- ERROR -->
+
+    <div
+      class="error"
+      id="error">
+    </div>
+
+
+    <!-- BOTTOM -->
+
+    <div class="bottom">
+
+      <button
+        id="closeButton"
+        type="button">
+        Cancel
+      </button>
+
+    </div>
+
   </div>
 
-</div>
+
+  <script>
+
+    /*************************************************
+     * SCANNER STATE
+     *************************************************/
+
+    let reader = null;
+    let controls = null;
+
+    let processing = false;
+    let cameraStopped = false;
+    let confirmationReceived = false;
+    let confirmationTimeout = null;
 
 
-<!-- CAMERA -->
+    /*************************************************
+     * GET SCANNER MODE
+     *************************************************/
 
-<div class="video-wrap">
+    const params = new URLSearchParams(
+      window.location.search
+    );
 
-  <video
-    id="camera"
-    playsinline
-    muted
-    autoplay>
-  </video>
-
-  <div class="guide"></div>
-
-  <div
-    class="status"
-    id="status">
-    Requesting camera permission…
-  </div>
-
-</div>
+    const mode =
+      params.get("mode") === "user"
+        ? "user"
+        : "item";
 
 
-<!-- ERROR -->
+    /*************************************************
+     * ELEMENTS
+     *************************************************/
 
-<div
-  class="error"
-  id="error">
-</div>
+    const camera = document.getElementById("camera");
+
+    const statusEl = document.getElementById("status");
+
+    const errorEl = document.getElementById("error");
+
+    const modeText = document.getElementById("modeText");
+
+    const closeButton = document.getElementById("closeButton");
 
 
-<!-- BOTTOM -->
+    /*************************************************
+     * SET MODE TEXT
+     *************************************************/
 
-<div class="bottom">
+    modeText.textContent =
+      mode === "item"
+        ? "Scan the item barcode"
+        : "Scan the user barcode";
 
-  <button
-    id="closeButton"
-    type="button">
 
-    Cancel
+    /*************************************************
+     * STATUS MESSAGE
+     *************************************************/
 
-  </button>
+    function setStatus(text) {
 
-</div>
+      statusEl.textContent = text || "";
 
-</div> <script> /************************************************* * SCANNER STATE *************************************************/ let reader = null; let controls = null; let processing = false; /************************************************* * GET SCANNER MODE *************************************************/ const params = new URLSearchParams( window.location.search ); const mode = params.get("mode") === "user" ? "user" : "item"; /************************************************* * ELEMENTS *************************************************/ const camera = document.getElementById( "camera" ); const statusEl = document.getElementById( "status" ); const errorEl = document.getElementById( "error" ); const modeText = document.getElementById( "modeText" ); const closeButton = document.getElementById( "closeButton" ); /************************************************* * SET MODE TEXT *************************************************/ modeText.textContent = mode === "item" ? "Scan the item barcode" : "Scan the user barcode"; /************************************************* * STATUS MESSAGE *************************************************/ function setStatus(text) { statusEl.textContent = text || ""; } /************************************************* * ERROR MESSAGE *************************************************/ function showError(text) { errorEl.textContent = text || "Unknown error."; errorEl.classList.add( "show" ); setStatus( "Camera could not be started." ); } /************************************************* * STOP CAMERA *************************************************/ function stopCamera() { /* * Stop ZXing controls. */ try { if ( controls && typeof controls.stop === "function" ) { controls.stop(); } } catch (error) { console.warn( "ZXing controls stop:", error ); } controls = null; /* * Reset ZXing reader. */ try { if ( reader && typeof reader.reset === "function" ) { reader.reset(); } } catch (error) { console.warn( "ZXing reader reset:", error ); } reader = null; /* * Stop camera stream. */ try { const stream = camera.srcObject; if ( stream && stream.getTracks ) { stream .getTracks() .forEach( function(track) { try { track.stop(); } catch (error) { console.warn( "Track stop:", error ); } } ); } } catch (error) { console.warn( "Stream cleanup:", error ); } /* * Stop video. */ try { camera.pause(); } catch (error) { console.warn( "Video pause:", error ); } camera.srcObject = null; } /************************************************* * SEND BARCODE TO PARENT WINDOW *************************************************/ function finishBarcode(value) { /* * Prevent duplicate scans. */ if (processing) { return; } processing = true; /* * Clean barcode. */ const barcode = String( value || "" ).trim(); if (!barcode) { processing = false; return; } console.log( "BARCODE DETECTED:", barcode ); /* * Check that the Apps Script * inventory page is still open. */ if ( !window.opener || window.opener.closed ) { showError( "The inventory page is no longer open. Return to the inventory page and scan again." ); processing = false; return; } setStatus( "Barcode found. Sending to inventory…" ); /************************************************* * SEND MESSAGE * * IMPORTANT: * * We use "*" here because the Apps Script * web app may use different Google domains. * * The parent Index.html performs the actual * security check and only accepts messages * originating from: * * https://ask-ketchum.github.io *************************************************/ try { window.opener.postMessage( { type: "barcode-scanned", mode: mode, barcode: barcode }, "*" ); console.log( "BARCODE MESSAGE SENT:", { type: "barcode-scanned", mode: mode, barcode: barcode } ); } catch (error) { console.error( "POSTMESSAGE ERROR:", error ); showError( "The barcode was detected, but could not be returned to the inventory page." ); processing = false; return; } /************************************************* * STOP CAMERA AFTER MESSAGE IS SENT *************************************************/ setTimeout( function() { stopCamera(); }, 50 ); /************************************************* * CLOSE CAMERA WINDOW *************************************************/ setStatus( "Barcode sent. Returning to inventory…" ); setTimeout( function() { try { window.close(); } catch (error) { console.warn( "Window close:", error ); } }, 500 ); } /************************************************* * START CAMERA *************************************************/ async function startCamera() { try { /*********************************************** * CHECK ZXING ***********************************************/ if ( typeof ZXingBrowser === "undefined" ) { throw new Error( "ZXing failed to load." ); } /*********************************************** * CHECK CAMERA API ***********************************************/ if ( !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ) { throw new Error( "Camera access is not available in this browser." ); } setStatus( "Requesting camera permission…" ); /*********************************************** * CREATE ZXING READER ***********************************************/ reader = new ZXingBrowser .BrowserMultiFormatReader(); /*********************************************** * START BARCODE SCANNING ***********************************************/ controls = await reader.decodeFromConstraints( { video: { /* * Use the rear camera when possible. */ facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }, camera, /******************************************* * BARCODE CALLBACK *******************************************/ function( result, error ) { /* * Ignore additional scans after * the first successful barcode. */ if (processing) { return; } /* * No barcode detected yet. */ if ( !result || typeof result.getText !== "function" ) { return; } /* * Get decoded barcode. */ const value = String( result.getText() || "" ).trim(); if (!value) { return; } /* * Barcode successfully detected. */ finishBarcode( value ); } ); /*********************************************** * CAMERA READY ***********************************************/ setStatus( "Camera ready. Point it at the barcode." ); console.log( "Camera started successfully." ); } catch (error) { console.error( "CAMERA ERROR:", error ); let message = "Could not access the camera."; if ( error && error.name === "NotAllowedError" ) { message = "Camera permission was denied or blocked. Allow camera access for this site and try again."; } else if ( error && error.name === "NotFoundError" ) { message = "No camera was found on this device."; } else if ( error && error.name === "NotReadableError" ) { message = "The camera is already being used by another app or browser tab."; } else if ( error && error.message ) { message = error.message; } showError( message ); } } /************************************************* * CANCEL BUTTON *************************************************/ closeButton.addEventListener( "click", function() { stopCamera(); try { window.close(); } catch (error) { console.warn( "Window close:", error ); } } ); /************************************************* * CLEANUP *************************************************/ window.addEventListener( "pagehide", stopCamera ); window.addEventListener( "beforeunload", stopCamera ); /************************************************* * START SCANNER *************************************************/ startCamera(); </script> </body> </html>
+    }
+
+
+    /*************************************************
+     * ERROR MESSAGE
+     *************************************************/
+
+    function showError(text) {
+
+      errorEl.textContent =
+        text || "Unknown error.";
+
+      errorEl.classList.add("show");
+
+      setStatus("Camera could not be started.");
+
+    }
+
+
+    /*************************************************
+     * STOP CAMERA
+     *************************************************/
+
+    function stopCamera() {
+
+      if (cameraStopped) {
+        return;
+      }
+
+      cameraStopped = true;
+
+      /*
+       * Stop ZXing controls.
+       */
+
+      try {
+
+        if (
+          controls &&
+          typeof controls.stop === "function"
+        ) {
+
+          controls.stop();
+
+        }
+
+      } catch (error) {
+
+        console.warn("ZXing controls stop:", error);
+
+      }
+
+      controls = null;
+
+
+      /*
+       * Reset ZXing reader.
+       */
+
+      try {
+
+        if (
+          reader &&
+          typeof reader.reset === "function"
+        ) {
+
+          reader.reset();
+
+        }
+
+      } catch (error) {
+
+        console.warn("ZXing reader reset:", error);
+
+      }
+
+      reader = null;
+
+
+      /*
+       * Stop camera stream.
+       */
+
+      try {
+
+        const stream = camera.srcObject;
+
+        if (stream && stream.getTracks) {
+
+          stream.getTracks().forEach(function(track) {
+
+            try {
+              track.stop();
+            } catch (error) {
+              console.warn("Track stop:", error);
+            }
+
+          });
+
+        }
+
+      } catch (error) {
+
+        console.warn("Stream cleanup:", error);
+
+      }
+
+
+      /*
+       * Stop video.
+       */
+
+      try {
+
+        camera.pause();
+
+      } catch (error) {
+
+        console.warn("Video pause:", error);
+
+      }
+
+      camera.srcObject = null;
+
+    }
+
+
+    /*************************************************
+     * HANDLE CONFIRMATION FROM INVENTORY PAGE
+     *************************************************/
+
+    window.addEventListener("message", function(event) {
+
+      /*
+       * Only accept messages from the expected
+       * external camera host.
+       */
+
+      if (
+        event.origin !== "https://ask-ketchum.github.io"
+      ) {
+        return;
+      }
+
+      if (!event.data) {
+        return;
+      }
+
+      if (event.data.type !== "barcode-received") {
+        return;
+      }
+
+      if (confirmationReceived) {
+        return;
+      }
+
+      confirmationReceived = true;
+
+      console.log(
+        "Inventory page confirmed barcode receipt."
+      );
+
+      if (confirmationTimeout) {
+        clearTimeout(confirmationTimeout);
+        confirmationTimeout = null;
+      }
+
+      setStatus("Barcode received successfully!");
+
+      stopCamera();
+
+      setTimeout(function() {
+
+        try {
+          window.close();
+        } catch (error) {
+          console.warn("Window close:", error);
+        }
+
+      }, 500);
+
+    });
+
+
+    /*************************************************
+     * SEND BARCODE TO PARENT WINDOW
+     *************************************************/
+
+    function finishBarcode(value) {
+
+      /*
+       * Prevent duplicate scans.
+       */
+
+      if (processing) {
+        return;
+      }
+
+      processing = true;
+
+
+      /*
+       * Clean barcode.
+       */
+
+      const barcode = String(value || "").trim();
+
+      if (!barcode) {
+
+        processing = false;
+        return;
+
+      }
+
+      console.log("BARCODE DETECTED:", barcode);
+
+
+      /*
+       * Check that inventory page is still open.
+       */
+
+      if (!window.opener || window.opener.closed) {
+
+        showError(
+          "The inventory page is no longer open. Return to the inventory page and scan again."
+        );
+
+        processing = false;
+        return;
+
+      }
+
+
+      /*
+       * Send barcode to inventory page.
+       */
+
+      setStatus("Barcode found. Sending to inventory…");
+
+      try {
+
+        window.opener.postMessage(
+
+          {
+            type: "barcode-scanned",
+            mode: mode,
+            barcode: barcode
+          },
+
+          "*"
+
+        );
+
+        console.log(
+          "BARCODE MESSAGE SENT:",
+          {
+            type: "barcode-scanned",
+            mode: mode,
+            barcode: barcode
+          }
+        );
+
+      } catch (error) {
+
+        console.error("POSTMESSAGE ERROR:", error);
+
+        showError(
+          "The barcode was detected, but could not be returned to the inventory page."
+        );
+
+        processing = false;
+        return;
+
+      }
+
+
+      /*
+       * Wait for inventory page confirmation.
+       */
+
+      setStatus(
+        "Barcode sent. Waiting for inventory page…"
+      );
+
+
+      /*
+       * Safety timeout.
+       *
+       * If no confirmation arrives, keep the camera
+       * window open so the user can see the message.
+       */
+
+      confirmationTimeout = setTimeout(function() {
+
+        if (!confirmationReceived) {
+
+          setStatus(
+            "No confirmation received. Check the inventory page."
+          );
+
+          processing = false;
+
+          console.warn(
+            "No barcode-received confirmation received."
+          );
+
+        }
+
+      }, 5000);
+
+    }
+
+
+    /*************************************************
+     * START CAMERA
+     *************************************************/
+
+    async function startCamera() {
+
+      try {
+
+        /***********************************************
+         * CHECK ZXING
+         ***********************************************/
+
+        if (typeof ZXingBrowser === "undefined") {
+
+          throw new Error("ZXing failed to load.");
+
+        }
+
+
+        /***********************************************
+         * CHECK CAMERA API
+         ***********************************************/
+
+        if (
+          !navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia
+        ) {
+
+          throw new Error(
+            "Camera access is not available in this browser."
+          );
+
+        }
+
+
+        setStatus("Requesting camera permission…");
+
+
+        /***********************************************
+         * CREATE ZXING READER
+         ***********************************************/
+
+        reader =
+          new ZXingBrowser.BrowserMultiFormatReader();
+
+
+        /***********************************************
+         * START BARCODE SCANNING
+         ***********************************************/
+
+        controls = await reader.decodeFromConstraints(
+
+          {
+
+            video: {
+
+              /*
+               * Use rear camera when possible.
+               */
+
+              facingMode: {
+                ideal: "environment"
+              },
+
+              width: {
+                ideal: 1280
+              },
+
+              height: {
+                ideal: 720
+              }
+
+            },
+
+            audio: false
+
+          },
+
+          camera,
+
+          function(result, error) {
+
+            /*
+             * Ignore additional scans after
+             * the first successful barcode.
+             */
+
+            if (processing) {
+              return;
+            }
+
+
+            /*
+             * No barcode detected yet.
+             */
+
+            if (
+              !result ||
+              typeof result.getText !== "function"
+            ) {
+              return;
+            }
+
+
+            /*
+             * Get decoded barcode.
+             */
+
+            const value =
+              String(result.getText() || "").trim();
+
+            if (!value) {
+              return;
+            }
+
+
+            /*
+             * Barcode successfully detected.
+             */
+
+            finishBarcode(value);
+
+          }
+
+        );
+
+
+        /***********************************************
+         * CAMERA READY
+         ***********************************************/
+
+        setStatus(
+          "Camera ready. Point it at the barcode."
+        );
+
+        console.log("Camera started successfully.");
+
+      } catch (error) {
+
+        console.error("CAMERA ERROR:", error);
+
+        let message = "Could not access the camera.";
+
+        if (error && error.name === "NotAllowedError") {
+
+          message =
+            "Camera permission was denied or blocked. Allow camera access for this site and try again.";
+
+        } else if (error && error.name === "NotFoundError") {
+
+          message =
+            "No camera was found on this device.";
+
+        } else if (error && error.name === "NotReadableError") {
+
+          message =
+            "The camera is already being used by another app or browser tab.";
+
+        } else if (error && error.message) {
+
+          message = error.message;
+
+        }
+
+        showError(message);
+
+      }
+
+    }
+
+
+    /*************************************************
+     * CANCEL BUTTON
+     *************************************************/
+
+    closeButton.addEventListener("click", function() {
+
+      if (confirmationTimeout) {
+        clearTimeout(confirmationTimeout);
+      }
+
+      stopCamera();
+
+      try {
+        window.close();
+      } catch (error) {
+        console.warn("Window close:", error);
+      }
+
+    });
+
+
+    /*************************************************
+     * CLEANUP
+     *************************************************/
+
+    window.addEventListener("pagehide", stopCamera);
+
+    window.addEventListener("beforeunload", stopCamera);
+
+
+    /*************************************************
+     * START SCANNER
+     *************************************************/
+
+    startCamera();
+
+  </script>
+
+</body>
+</html>
